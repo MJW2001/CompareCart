@@ -1,13 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import "../style/SearchPage.css";
 
 const SearchPage = () => {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [error, setError] = useState(null);
 
-  const handleSearch = () => {
-    fetch(`http://127.0.0.1:5000/api/items/search?keyword=${searchQuery}`)
+  useEffect(() => {
+    const query = searchParams.get("keyword");
+    if (query) {
+      setSearchQuery(query);
+      handleSearch(query);
+    }
+  }, [searchParams]);
+
+  const handleSearch = (query) => {
+    fetch(`http://127.0.0.1:5000/api/items/search?keyword=${query}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -39,20 +49,21 @@ const SearchPage = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <button onClick={handleSearch}>Search</button>
+        <button onClick={() => handleSearch(searchQuery)}>Search</button>
         <button onClick={handleReset} className="reset-button">
           Reset
         </button>
       </div>
       {error && <p className="error-message">{error}</p>}
-      {searchResults.length === 0 && !error && <p>No results found.</p>}
+      {searchResults.length === 0 && !error && <p>Start searching and discover everything you need in one place!</p>}
       <div className="search-results">
         {searchResults.map((result) => (
           <div key={result.id} className="result-card">
-            {result.img_reference && (
+            {result.img_ref && (
               <img
-                src={result.img_reference}
+                src={result.img_ref}
                 alt={result.title}
+                className="result-image"
                 onError={(e) => (e.target.style.display = "none")}
               />
             )}
@@ -61,11 +72,16 @@ const SearchPage = () => {
               <strong>Store:</strong> {result.store}
             </p>
             <p>
-              <strong>Price:</strong> ${result.price}
+              <strong>Price:</strong> ${result.price.toFixed(2)}
             </p>
             <p>
               <strong>Rating:</strong> {result.star} stars
             </p>
+            {result.detail_url && (
+              <a href={result.detail_url} target="_blank" rel="noopener noreferrer" className="detail-link">
+                View Details
+              </a>
+            )}
           </div>
         ))}
       </div>
